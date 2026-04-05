@@ -147,7 +147,7 @@ Creates a formatted Excel workbook with 3 sheets:
 2. Verify that all transactions are correctly categorized
 3. Adjust categories if necessary
 
-- PS: Put the category keywords during payments to ensure accurate categorization in future imports.
+- PS: Put the category keywords during payments to ensure accurate categorization.
 
 ### **Step 4: Visualize**
 1. Click **"📊 Visualize"**
