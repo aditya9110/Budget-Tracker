@@ -1,4 +1,4 @@
-# 💰 Personal Budget Tracker
+# 💰 Budgeteer - Personal Expense Tracker
 
 A Streamlit-based personal expense dashboard that automatically parses bank statements, categorizes transactions, and provides interactive visualizations for budget analysis.
 
@@ -18,7 +18,7 @@ This application helps you:
 ## 📁 Project Structure
 
 ```
-Personal Budget/
+Budgeteer/
 ├── dashboard.py              # Main Streamlit UI application
 ├── visualize_budget.py       # Visualization and metrics functions
 ├── automate_budget.py        # Bank statement parsing & Excel generation
