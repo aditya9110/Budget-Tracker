@@ -1,17 +1,18 @@
-# 💰 Budgeteer - Personal Expense Tracker
+# 💰 Budgeteer
 
-A Streamlit-based personal expense dashboard that automatically parses bank statements, categorizes transactions, and provides interactive visualizations for budget analysis.
+A personal expense tracking desktop app built with PyQt6 and Python. Import your bank statements, auto-categorize transactions, visualize spending patterns, and manage your budget — all in one place, fully offline.
 
 ---
 
-## 📋 Project Overview
+## ✨ Features
 
-This application helps you:
-- **Automatically import** bank statements from Excel files
-- **Categorize transactions** using intelligent keyword matching
-- **Visualize spending patterns** with interactive charts
-- **Track budget status** with real-time metrics
-- **Compare expenses** across salary periods
+- **Import Bank Statements** — drag & drop or browse `.xlsx`/`.xls` files
+- **Auto Categorization** — transactions are automatically matched to categories using keyword rules
+- **Interactive Dashboard** — KPI metrics, bar chart, daily trend, cumulative spend, donut chart, and treemap
+- **Transactions View** — browse, add, edit, and delete transactions by month
+- **Budget Status** — compares salary to expenses across months
+- **Fully Offline** — all data stored locally in a single SQLite file
+- **No installation needed** — can be packaged as a standalone `.exe`
 
 ---
 
@@ -19,169 +20,134 @@ This application helps you:
 
 ```
 Budgeteer/
-├── dashboard.py              # Main Streamlit UI application
-├── visualize_budget.py       # Visualization and metrics functions
-├── automate_budget.py        # Bank statement parsing & Excel generation
-├── year/
-│   ├── Bank Statements/      # Folder for bank statement Excel files
-│   ├── January Expense Tracker.xlsx
-│   └── February Expense Tracker.xlsx
-└── README.md
+├── main.py                  # Entry point — opens PyQt6 window
+├── api.py                   # Python ↔ JS bridge (js_api)
+├── db.py                    # SQLite setup and queries
+├── requirements.txt
+├── src/
+│   └── automate_budget.py   # Bank statement parsing and categorization
+├── frontend/
+│   ├── index.html           # Main UI
+│   ├── style.css            # Dark theme styles
+│   ├── app.js               # JS logic and Plotly charts
+│   └── plotly.min.js        # Local Plotly (no internet needed)
+└── data/
+    └── budgeteer.db            # SQLite database (auto-created on first run)
 ```
 
 ---
 
-## 🔧 File Descriptions
+## ⚙️ Setup (First Time Only)
 
-### 1. **dashboard.py** - Main Application
-**Purpose:** Streamlit frontend and user interface
+### 1. Install Python
+Download Python 3.10+ from https://python.org
+Check **"Add Python to PATH"** during installation.
 
-**Key Features:**
-- Year and month selection dropdowns
-- Generate new expense tracker button
-- Visualize dashboard button
-- File overwrite confirmation dialog
-
-**Main Flow:**
+### 2. Create virtual environment
 ```
-User selects Year & Month
-         ↓
-Click "Generate" → Create expense tracker from bank statement
-         ↓
-Click "Visualize" → Display interactive dashboard
+python -m venv .venv
+.venv\Scripts\activate
+```
+
+### 3. Install dependencies
+```
+python -m pip install -r requirements.txt
 ```
 
 ---
 
-### 2. **visualize_budget.py** - Visualizations & Metrics
-**Purpose:** Creates all dashboard charts and metrics
+## ▶️ Run the App
 
-**Key Features:**
+```
+python main.py
+```
 
-#### **Top KPI Metrics**
-Displays 5 metrics in columns:
-1. **💸 Total Spent** - Sum of all expenses
-2. **🔥 Top Category** - Highest spending category
-3. **📅 Avg Daily Spend** - Average daily expenses
-4. **🧾 Transactions** - Total transaction count
-5. **💰 Budget Status** - Salary vs Expenses (with ▲/▼ and color coding)
-   - 🟢 Green ▲ = Under budget (surplus)
-   - 🔴 Red ▼ = Over budget (deficit)
-
-#### **Hierarchical View**
-Shows spending breakdown by category and description in a treemap visualization.
-
-#### **Horizontal Bar Chart**
-Bar chart sorted by spend amount showing each category's total expenses.
-
-#### **Daily Trend Analysis**
-Overlaid bar chart (daily spend) with 7-day moving average line.
-
-#### **Source Distribution**
-Pie chart showing where expenses came from (e.g., Bank Statement).
-
-#### **Family Spending Split**
-Donut chart comparing spending between:
-- **Parents**
-- **Family**
-
-#### **High-Value Transactions**
-Table of top 8 transactions with date, description, category, source, and amount.
+The app opens as a native Windows window — no browser, no terminal visible.
 
 ---
 
-### 3. **automate_budget.py** - Bank Statement Processing
-**Purpose:** Parses bank statements and generates Excel trackers
+## 📂 Importing a Bank Statement
 
-**Key Features:**
-
-#### **File Discovery**
-- Finds file matching the month name (case-sensitive)
-- Raises error if file not found
-
-#### **Excel Parsing**
-- Multi-line transaction remarks (overflow rows)
-- Salary transaction detection (separate column)
-- Withdrawal amount validation
-
-#### **Smart Categorization**
-- Matches transaction remarks against category keywords (case-insensitive)
-- Falls back to "Others" if no match
-
-#### **Excel Generation**
-Creates a formatted Excel workbook with 3 sheets:
-
-**Sheet 1: Transactions**
-- Columns: #, Date, Description, Source, Type, Spend, Remarks
-- All withdrawal transactions auto-categorized
-- Salary transactions in "Remarks" column (for comparison)
-- Auto-filter enabled on headers
-- Currency formatting (₹)
-
-**Sheet 2: Categories**
-- Uses SUMIF formula to aggregate spending by category
-- Auto-calculates percentage of total
-- Total row with 100% verification
-
-**Sheet 3: Dashboard**
-- Sample chart (for reference)
+1. Export your bank statement as `.xlsx` or `.xls`
+2. Open the app and go to **Import Statement**
+3. Drag & drop the file or click **Browse File**
+4. Click **Import & Categorize**
+5. If data for that month already exists, you'll be asked to confirm overwrite
+6. Transactions are auto-categorized and stored in the database
+7. App redirects to **Transactions** view automatically
 
 ---
 
-## 🚀 How to Use
+## 📊 Dashboard
 
-### **Step 1: Prepare Bank Statement**
-1. Export bank statement as Excel from your bank
-2. Save to: `2026/Bank Statements/{Month}.xlsx`
-3. Ensure columns are at standard positions (adjustable in `automate_budget.py`)
+Select a month and year from the top bar and click **Load** to view:
 
-### **Step 2: Generate Tracker**
-1. Open dashboard: `streamlit run dashboard.py`
-2. Select Year and Month
-3. Click **"📥 Generate"**
-4. Confirm if file exists (overwrite if needed)
-5. Wait for "Excel tracker created" message
-
-### **Step 3: Review Transactions**
-1. Open the generated Excel file
-2. Verify that all transactions are correctly categorized
-3. Adjust categories if necessary
-
-- PS: Put the category keywords during payments to ensure accurate categorization.
-
-### **Step 4: Visualize**
-1. Click **"📊 Visualize"**
-2. View interactive dashboard with:
-   - Top 5 KPI metrics
-   - Category breakdown charts
-   - Daily spending trend
-   - Spending heatmap
-   - Top transactions table
-   - Raw data view
+- **KPI Row** — Total Spent, Top Category, Avg Daily Spend, Transaction Count, Budget Status
+- **Category Breakdown** — horizontal bar chart sorted by spend
+- **Daily Spending Trend** — bar chart with 7-day rolling average
+- **Cumulative Spend** — area chart showing total spend over the month
+- **Parents vs Family** — donut chart splitting spend groups
+- **Hierarchical View** — treemap of categories and transactions
+- **Top Transactions** — table of 8 highest spend transactions
 
 ---
 
-## 🛠️ Configuration
+## 🧾 Transactions
 
-### **Bank Statement Column Indices**
-In `automate_budget.py`, adjust these if your bank uses different columns:
+Select a period and click **Load** to view all transactions for that month.
+
+- **➕ Add** — manually add a new transaction
+- **✎ Edit** — edit any existing transaction inline
+- **✕ Delete** — delete a transaction (with confirmation)
+
+---
+
+## 🔧 Configuration
+
+### Adjust Bank Statement Column Positions
+If your bank uses different column positions, edit in `src/automate_budget.py`:
 
 ```python
-DATE_COL = 3          # Date column position
-REMARKS_COL = 5       # Description column position
-WITHDRAWAL_COL = 6    # Withdrawal amount column position
-SALARY_COL = 7        # Salary amount column position
+DATE_COL       = 3   # Date column index
+REMARKS_COL    = 5   # Description column index
+WITHDRAWAL_COL = 6   # Withdrawal amount column index
+SALARY_COL     = 7   # Salary/credit amount column index
 ```
 
-### **Add Custom Categories**
-Edit `CATEGORIES` dictionary:
+### Add or Edit Categories
+Edit the `CATEGORIES` dictionary in `src/automate_budget.py`:
 
 ```python
 CATEGORIES = {
-    "Your Category": ["keyword1", "keyword2", ...],
+    "Food": ["food", "swiggy", "zomato"],
+    "Travel": ["uber", "ola", "irctc"],
     ...
 }
 ```
+
+---
+
+## 💾 Backup
+
+All data is stored in a single file:
+```
+Budgeteer/data/budgeteer.db
+```
+
+Copy this file to Google Drive or any location to back up all your transactions. To restore, copy it back into the `data/` folder.
+
+---
+
+## 📦 Package as .exe (Optional)
+
+To create a standalone Windows executable:
+
+```
+python -m pip install pyinstaller
+pyinstaller --onefile --windowed --add-data "frontend;frontend" main.py
+```
+
+The `.exe` will be in the `dist/` folder. Copy `dist/main.exe` + `data/` folder to any Windows machine — no Python needed.
 
 ---
 
@@ -189,20 +155,19 @@ CATEGORIES = {
 
 | Issue | Solution |
 |-------|----------|
-| File not found error | Check bank statement is in `2026/Bank Statements/` |
-| No transactions imported | Verify column indices match your bank's format in `automate_budget.py` |
-| Transactions not categorized | Add keywords to `CATEGORIES` dictionary for your bank's terminology |
-| Salary not detected | Ensure salary transaction has "salary" in description (case-insensitive) |
-| Budget Status not showing | Previous month's file must exist to calculate salary vs expenses |
+| No transactions imported | Verify column indices match your bank format in `src/automate_budget.py` |
+| Transactions not categorized | Add keywords to `CATEGORIES` for your bank's terminology |
+| Salary not detected | Ensure salary transaction has "salary" in description |
+| Budget Status not showing | Previous month's data must be imported first |
+| Charts not rendering | Ensure `frontend/plotly.min.js` exists |
 
 ---
 
 ## 📝 Notes
 
-- **Salary Detection:** Transactions with "salary" in description are flagged separately
-- **Budget Comparison:** Compares expenses from current salary to next salary
-- **Auto-filter:** All transaction sheets have auto-filter enabled for easy sorting
-- **Currency:** All amounts displayed in Indian Rupees (₹) with 2 decimal places
+- Salary rows are stored separately and used only for budget status calculation
+- All amounts are in Indian Rupees (₹)
+- The app works fully offline — no internet connection required after setup
 
 ---
 

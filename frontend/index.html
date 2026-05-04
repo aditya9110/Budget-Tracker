@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Budgeteer</title>
+    <script src="plotly.min.js"></script>
+    <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+    <!-- ── SIDEBAR ─────────────────────────────── -->
+    <aside class="sidebar">
+        <div class="sidebar-logo">
+            <span class="logo-icon">₹</span>
+            <span class="logo-text">Budgeteer</span>
+        </div>
+
+        <nav class="sidebar-nav">
+            <button class="nav-item active" data-view="dashboard">
+                <span class="nav-icon">📊</span>
+                <span>Dashboard</span>
+            </button>
+            <button class="nav-item" data-view="import">
+                <span class="nav-icon">📂</span>
+                <span>Import Statement</span>
+            </button>
+            <button class="nav-item" data-view="transactions">
+                <span class="nav-icon">📋</span>
+                <span>Transactions</span>
+            </button>
+            <button class="nav-item" data-view="settings">
+                <span class="nav-icon">⚙️</span>
+                <span>Settings</span>
+            </button>
+        </nav>
+    </aside>
+
+    <!-- ── MAIN CONTENT ─────────────────────────── -->
+    <main class="main">
+
+        <!-- Top bar -->
+        <header class="topbar">
+            <div id="page-title" class="page-title">📊 Dashboard</div>
+
+            <!-- Period selector — shown only on Dashboard and Transactions -->
+            <div id="period-controls" class="period-controls">
+
+                <!-- Month dropdown -->
+                <div class="custom-select" id="month-dropdown">
+                    <div class="custom-select-trigger" id="month-trigger">
+                        <span id="month-label">Month</span>
+                        <span class="custom-select-arrow">▾</span>
+                    </div>
+                    <div class="custom-select-options" id="month-options"></div>
+                </div>
+
+                <!-- Year dropdown -->
+                <div class="custom-select" id="year-dropdown">
+                    <div class="custom-select-trigger" id="year-trigger">
+                        <span id="year-label">Year</span>
+                        <span class="custom-select-arrow">▾</span>
+                    </div>
+                    <div class="custom-select-options" id="year-options"></div>
+                </div>
+
+                <button class="btn-load" id="btn-load">Load</button>
+            </div>
+        </header>
+
+        <!-- Toast notification -->
+        <div id="toast" class="toast"></div>
+
+        <!-- ── DASHBOARD VIEW ── -->
+        <section id="view-dashboard" class="view active">
+            <div id="dashboard-empty" class="empty-state">
+                <div class="empty-icon">📊</div>
+                <div class="empty-title">Select a period to view dashboard</div>
+                <div class="empty-sub">Choose a month and year above, then click Load</div>
+            </div>
+            <div id="dashboard-content" class="hidden">
+
+                <!-- KPI row -->
+                <div class="kpi-row">
+                    <div class="kpi-card" id="kpi-total">
+                        <div class="kpi-label">Total Spent</div>
+                        <div class="kpi-value">—</div>
+                    </div>
+                    <div class="kpi-card" id="kpi-top">
+                        <div class="kpi-label">Top Category</div>
+                        <div class="kpi-value">—</div>
+                    </div>
+                    <div class="kpi-card" id="kpi-avg">
+                        <div class="kpi-label">Avg Daily</div>
+                        <div class="kpi-value">—</div>
+                    </div>
+                    <div class="kpi-card" id="kpi-count">
+                        <div class="kpi-label">Transactions</div>
+                        <div class="kpi-value">—</div>
+                    </div>
+                    <div class="kpi-card" id="kpi-budget">
+                        <div class="kpi-label">Budget Status</div>
+                        <div class="kpi-value">—</div>
+                    </div>
+                </div>
+
+                <!-- Charts row 1 -->
+                <div class="chart-row two-col">
+                    <div class="chart-card">
+                        <div class="chart-title">Category Breakdown</div>
+                        <div id="chart-bar" class="chart-area"></div>
+                    </div>
+                    <div class="chart-card">
+                        <div class="chart-title">Daily Spending Trend</div>
+                        <div id="chart-daily" class="chart-area"></div>
+                    </div>
+                </div>
+
+                <!-- Charts row 2 -->
+                <div class="chart-row three-col">
+                    <div class="chart-card span-2">
+                        <div class="chart-title">Cumulative Spend</div>
+                        <div id="chart-cumulative" class="chart-area"></div>
+                    </div>
+                    <div class="chart-card">
+                        <div class="chart-title">Parents vs Family</div>
+                        <div id="chart-donut" class="chart-area"></div>
+                    </div>
+                </div>
+
+                <!-- Charts row 3 — Treemap -->
+                <div class="chart-row full">
+                    <div class="chart-card">
+                        <div class="chart-title">Hierarchical View</div>
+                        <div id="chart-treemap" class="chart-area tall"></div>
+                    </div>
+                </div>
+
+                <!-- Top transactions -->
+                <div class="chart-card">
+                    <div class="chart-title">Top Transactions</div>
+                    <div id="top-transactions" class="table-wrap"></div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ── IMPORT STATEMENT VIEW ── -->
+        <section id="view-import" class="view">
+            <div class="import-container">
+                <div class="import-title">Import Bank Statement</div>
+                <div class="import-sub">Supports .xlsx and .xls files exported from your bank</div>
+
+                <!-- Drop zone -->
+                <div class="drop-zone" id="drop-zone">
+                    <div class="drop-icon">📁</div>
+                    <div class="drop-title">Drag & drop your bank statement here</div>
+                    <div class="drop-sub">or</div>
+                    <button class="btn-browse" id="btn-browse">Browse File</button>
+                    <input type="file" id="file-input" accept=".xlsx,.xls" style="display:none" />
+                </div>
+
+                <!-- Selected file info -->
+                <div id="file-info" class="file-info hidden">
+                    <div class="file-info-name" id="file-name"></div>
+                    <button class="btn-clear" id="btn-clear">✕</button>
+                </div>
+
+                <!-- Import button -->
+                <button class="btn-import hidden" id="btn-import">
+                    Import & Categorize
+                </button>
+
+                <!-- Progress -->
+                <div id="import-progress" class="import-progress hidden">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progress-fill"></div>
+                    </div>
+                    <div class="progress-label" id="progress-label">Processing...</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ── TRANSACTIONS VIEW ── -->
+        <section id="view-transactions" class="view">
+            <div id="transactions-empty" class="empty-state">
+                <div class="empty-icon">📋</div>
+                <div class="empty-title">Select a period to view transactions</div>
+                <div class="empty-sub">Choose a month and year above, then click Load</div>
+            </div>
+            <div id="transactions-content" class="hidden">
+                <div class="chart-card">
+                    <div class="transactions-toolbar">
+                        <div class="chart-title">All Transactions</div>
+                        <button class="btn-add" id="btn-add-transaction">+ Add</button>
+                    </div>
+                    <div id="all-transactions" class="table-wrap"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ── SETTINGS VIEW ── -->
+        <section id="view-settings" class="view">
+            <div class="empty-state">
+                <div class="empty-icon">⚙️</div>
+                <div class="empty-title">Settings</div>
+                <div class="empty-sub">Coming soon</div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ── OVERWRITE MODAL ──────────────────────── -->
+    <div id="modal-overlay" class="modal-overlay hidden">
+        <div class="modal">
+            <div class="modal-icon">⚠</div>
+            <div class="modal-title" id="modal-title">Confirm</div>
+            <div class="modal-body" id="modal-body"></div>
+            <div class="modal-actions">
+                <button class="modal-btn cancel" id="modal-cancel">Cancel</button>
+                <button class="modal-btn confirm" id="modal-confirm">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── TRANSACTION EDIT MODAL ──────────────── -->
+    <div id="tx-modal-overlay" class="modal-overlay hidden">
+        <div class="modal wide">
+            <div class="modal-title" id="tx-modal-title">Add Transaction</div>
+            <div class="tx-form">
+                <input type="hidden" id="tx-id" />
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Date</label>
+                        <input type="text" id="tx-date" placeholder="DD-MM-YYYY" class="form-input" />
+                    </div>
+                    <div class="form-group">
+                        <label>Spend</label>
+                        <input type="number" id="tx-spend" placeholder="0.00" class="form-input" />
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Description</label>
+                    <input type="text" id="tx-description" placeholder="Transaction description" class="form-input" />
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Type (Category)</label>
+                        <input type="text" id="tx-type" placeholder="e.g. Food, Travel" class="form-input" />
+                    </div>
+                    <div class="form-group">
+                        <label>Source</label>
+                        <input type="text" id="tx-source" placeholder="e.g. Bank Statement" class="form-input" />
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Remarks</label>
+                    <input type="text" id="tx-remarks" placeholder="Optional" class="form-input" />
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button class="modal-btn cancel" id="tx-modal-cancel">Cancel</button>
+                <button class="modal-btn confirm" id="tx-modal-save">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
