@@ -233,7 +233,7 @@ async function loadDashboard(year, month) {
         const result = await callPython("get_dashboard_data", year, month);
         if (!result.ok) { showToast(result.error, "error"); return; }
 
-        const { transactions, categories, daily_spend, budget_status, top_transactions } = result.data;
+        const { transactions, categories, daily_spend, budget_status, top_transactions, source_breakdown } = result.data;
 
         if (!transactions.length) {
             showToast("No data found for this period. Import first.", "info");
@@ -249,9 +249,10 @@ async function loadDashboard(year, month) {
 
         setTimeout(() => {
             renderBarChart(categories);
+            renderSourceDonutChart(source_breakdown);
             renderDailyChart(daily_spend);
             renderCumulativeChart(daily_spend);
-            renderDonutChart(categories);
+            renderFamilyDonutChart(categories);
             renderTreemap(transactions);
         }, 100);
 
@@ -316,6 +317,23 @@ function renderBarChart(categories) {
     }, { displayModeBar: false, responsive: true });
 }
 
+function renderSourceDonutChart(sourceBreakdown) {
+    Plotly.newPlot("chart-source-donut", [{
+        type: "pie",
+        labels: sourceBreakdown.map(s => s.source),
+        values: sourceBreakdown.map(s => s.spend),
+        hole: 0.55,
+        marker: { colors: ["#7030A0", "#9B59B6", "#C39BD3"], line: { color: BG_CARD, width: 2 } },
+        textinfo: "label+percent",
+        textfont: { size: 11 },
+        hovertemplate: "<b>%{label}</b><br>%{value:,.0f}<br>%{percent}<extra></extra>"
+    }], {
+        ...PLOTLY_BASE,
+        margin: { t: 10, b: 10, l: 10, r: 10 },
+        height: 280,
+    }, { displayModeBar: false, responsive: true });
+}
+
 function renderDailyChart(dailySpend) {
     const dates  = dailySpend.map(d => d.date);
     const spends = dailySpend.map(d => d.total_spend);
@@ -366,7 +384,7 @@ function renderCumulativeChart(dailySpend) {
     }, { displayModeBar: false, responsive: true });
 }
 
-function renderDonutChart(categories) {
+function renderFamilyDonutChart(categories) {
     const PARENTS_CATS = new Set(["Bills (P)", "Parents", "Medicines (P)"]);
     const FAMILY_CATS  = new Set([
         "Cash Withdrawal","EMI","Rent","Food","Entertainment",
@@ -380,7 +398,7 @@ function renderDonutChart(categories) {
         else if (FAMILY_CATS.has(c.type)) familyTotal  += c.total_spend;
     });
 
-    Plotly.newPlot("chart-donut", [{
+    Plotly.newPlot("chart-family-donut", [{
         type: "pie",
         labels: ["Family", "Parents"],
         values: [familyTotal, parentsTotal],
