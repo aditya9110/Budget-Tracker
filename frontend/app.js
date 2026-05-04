@@ -406,7 +406,10 @@ function renderTreemap(transactions) {
     const allIds     = [...catSet, ...ids];
     const allLabels  = [...catSet, ...labels];
     const allParents = [...catSet.map(() => ""), ...parents];
-    const allValues  = [...catSet.map(() => 0), ...values];
+    const catTotals = catSet.map(cat =>
+        values.reduce((sum, v, i) => parents[i] === cat ? sum + v : sum, 0)
+    );
+    const allValues = [...catTotals, ...values];
 
     Plotly.newPlot("chart-treemap", [{
         type: "treemap",
