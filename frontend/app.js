@@ -604,6 +604,14 @@ function setupTransactionForm() {
 }
 
 function openTxModal(row) {
+    // Clear previous errors
+    ["err-date","err-spend","err-description","err-type","err-source"].forEach(id => {
+        document.getElementById(id).textContent = "";
+    });
+    ["tx-date","tx-spend","tx-description","tx-type","tx-source"].forEach(id => {
+        document.getElementById(id).classList.remove("invalid");
+    });
+
     txModalTitle.textContent = row ? "Edit Transaction" : "Add Transaction";
     document.getElementById("tx-id").value          = row ? row.id : "";
     document.getElementById("tx-date").value         = row ? row.date : "";
@@ -615,7 +623,38 @@ function openTxModal(row) {
     txModalOverlay.classList.remove("hidden");
 }
 
+function validateTxForm() {
+    const fields = [
+        { id: "tx-date",        errId: "err-date",        rule: v => /^\d{2}-\d{2}-\d{4}$/.test(v),  msg: "Enter a valid date (DD-MM-YYYY)" },
+        { id: "tx-spend",       errId: "err-spend",       rule: v => !isNaN(v) && Number(v) > 0,      msg: "Enter a positive amount" },
+        { id: "tx-description", errId: "err-description", rule: v => v.trim().length >= 3,             msg: "Min 3 characters required" },
+        { id: "tx-type",        errId: "err-type",        rule: v => v.trim().length > 0,              msg: "Category is required" },
+        { id: "tx-source",      errId: "err-source",      rule: v => v.trim().length > 0,              msg: "Source is required" },
+    ];
+
+    let valid = true;
+
+    fields.forEach(({ id, errId, rule, msg }) => {
+        const input = document.getElementById(id);
+        const err   = document.getElementById(errId);
+        const val   = input.value;
+
+        if (!rule(val)) {
+            input.classList.add("invalid");
+            err.textContent = msg;
+            valid = false;
+        } else {
+            input.classList.remove("invalid");
+            err.textContent = "";
+        }
+    });
+
+    return valid;
+}
+
 async function saveTx() {
+    if (!validateTxForm()) return;
+
     const id = document.getElementById("tx-id").value;
     const payload = {
         date:        document.getElementById("tx-date").value,

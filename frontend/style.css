@@ -702,6 +702,18 @@ tbody td.actions  { width: 80px; }
     transition: border-color 0.18s;
 }
 
+.form-error {
+    font-size: 11px;
+    color: var(--red);
+    margin-top: 2px;
+    min-height: 16px;
+    display: block;
+}
+
+.form-input.invalid {
+    border-color: var(--red);
+}
+
 .form-input:focus { border-color: var(--purple); }
 
 /* ── SCROLLBAR ────────────────────────────────── */
