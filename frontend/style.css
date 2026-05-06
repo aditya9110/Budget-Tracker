@@ -567,6 +567,47 @@ tbody td.amount   { color: var(--text-primary); font-weight: 500; }
 tbody td.category { color: var(--purple-light); }
 tbody td.actions  { width: 80px; }
 
+th.sortable, th.filterable {
+    cursor: pointer;
+    user-select: none;
+}
+
+th.sortable:hover, th.filterable:hover {
+    color: var(--purple-light);
+}
+
+th .col-arrow {
+    margin-left: 4px;
+    font-size: 10px;
+    color: var(--purple-light);
+}
+
+.col-filter-dropdown {
+    position: absolute;
+    background: var(--bg-card);
+    border: 1px solid var(--border-hover);
+    border-radius: var(--radius-sm);
+    z-index: 300;
+    min-width: 160px;
+    max-height: 220px;
+    overflow-y: auto;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+}
+
+.col-filter-option {
+    padding: 8px 14px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.col-filter-option:hover { background: var(--bg-hover); color: var(--text-primary); }
+.col-filter-option.selected { color: var(--purple-light); background: var(--purple-dim); }
+
+thead th { position: relative; }
+
 .btn-edit, .btn-delete {
     background: none;
     border: none;

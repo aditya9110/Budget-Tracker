@@ -602,18 +602,159 @@ function animateProgress() {
 
 // ── TRANSACTIONS ─────────────────────────────────────────────────────────────
 
+let allTransactions  = [];   // full unfiltered data
+let filterType       = "All";
+let filterSource     = "All";
+let sortCol          = "date";
+let sortDir          = "asc";
+
 async function loadTransactions(year, month) {
     const result = await callPython("get_transactions", year, month);
     if (!result.ok) { showToast(result.error, "error"); return; }
 
-    const rows = result.data;
+    allTransactions = result.data;
+
+    // Reset filters and sort on fresh load
+    filterType   = "All";
+    filterSource = "All";
+    sortCol      = "date";
+    sortDir      = "asc";
 
     document.getElementById("transactions-empty").classList.add("hidden");
     document.getElementById("transactions-content").classList.remove("hidden");
 
-    const cols = ["date","description","source","type","spend","remarks"];
-    document.getElementById("all-transactions").innerHTML =
-        buildTable(rows, cols, true);
+    renderTransactionsTable();
+}
+
+function getFilteredSorted() {
+    let rows = [...allTransactions];
+
+    // Filter
+    if (filterType   !== "All") rows = rows.filter(r => r.type   === filterType);
+    if (filterSource !== "All") rows = rows.filter(r => r.source === filterSource);
+
+    // Sort
+    rows.sort((a, b) => {
+        let valA = sortCol === "spend" ? a.spend : a.date;
+        let valB = sortCol === "spend" ? b.spend : b.date;
+        if (valA < valB) return sortDir === "asc" ? -1 : 1;
+        if (valA > valB) return sortDir === "asc" ? 1 : -1;
+        return 0;
+    });
+
+    return rows;
+}
+
+function renderTransactionsTable() {
+    const rows    = getFilteredSorted();
+    const cols    = ["date", "description", "source", "type", "spend", "remarks"];
+    const el      = document.getElementById("all-transactions");
+
+    // Unique values for filter dropdowns
+    const uniqueTypes   = ["All", ...new Set(allTransactions.map(r => r.type).filter(Boolean))];
+    const uniqueSources = ["All", ...new Set(allTransactions.map(r => r.source).filter(Boolean))];
+
+    const headers = cols.map(c => {
+        if (c === "date") {
+            const arrow = sortCol === "date" ? (sortDir === "asc" ? "↑" : "↓") : "";
+            return `<th class="sortable" onclick="toggleSort('date')">DATE <span class="col-arrow">${arrow}</span></th>`;
+        }
+        if (c === "spend") {
+            const arrow = sortCol === "spend" ? (sortDir === "asc" ? "↑" : "↓") : "";
+            return `<th class="sortable" onclick="toggleSort('spend')">SPEND <span class="col-arrow">${arrow}</span></th>`;
+        }
+        if (c === "type") {
+            const active = filterType !== "All" ? `color:var(--purple-light)` : "";
+            return `<th class="filterable" style="${active}" data-field="type" data-options='${JSON.stringify(uniqueTypes)}'>TYPE ▾</th>`;
+        }
+        if (c === "source") {
+            const active = filterSource !== "All" ? `color:var(--purple-light)` : "";
+            return `<th class="filterable" style="${active}" data-field="source" data-options='${JSON.stringify(uniqueSources)}'>SOURCE ▾</th>`;
+        }
+        return `<th>${c.toUpperCase()}</th>`;
+    }).join("");
+
+    const actionsHeader = `<th style="width:80px"></th>`;
+
+    const body = rows.length ? rows.map(row => {
+        const cells = cols.map(c => {
+            let val = row[c] ?? "—";
+            let cls = "";
+            if (c === "spend") { val = fmt(val); cls = "amount"; }
+            if (c === "type")  { cls = "category"; }
+            if (c === "date")  { val = formatDate(val); }
+            if (c === "description" && typeof val === "string") val = val.slice(0, 55);
+            return `<td class="${cls}">${val}</td>`;
+        }).join("");
+
+        return `<tr>
+            ${cells}
+            <td class="actions">
+                <button class="btn-edit"   onclick='openTxModal(${JSON.stringify(row)})'>✎</button>
+                <button class="btn-delete" onclick='deleteTx(${row.id})'>✕</button>
+            </td>
+        </tr>`;
+    }).join("") : `<tr><td colspan="${cols.length + 1}" style="padding:24px;text-align:center;color:var(--text-muted);">No transactions found</td></tr>`;
+
+    el.innerHTML = `<table><thead><tr>${headers}${actionsHeader}</tr></thead><tbody>${body}</tbody></table>`;
+
+    el.querySelectorAll("th.filterable").forEach(th => {
+        th.addEventListener("click", (e) => {
+            const field   = th.dataset.field;
+            const options = JSON.parse(th.dataset.options);
+            openColFilter(e, field, options);
+        });
+    });
+}
+
+function toggleSort(col) {
+    if (sortCol === col) {
+        sortDir = sortDir === "asc" ? "desc" : "asc";
+    } else {
+        sortCol = col;
+        sortDir = "asc";
+    }
+    renderTransactionsTable();
+}
+
+function openColFilter(event, field, options) {
+    event.stopPropagation();
+
+    // Remove existing dropdown
+    document.querySelectorAll(".col-filter-dropdown").forEach(d => d.remove());
+
+    const th = event.currentTarget;
+    const rect = th.getBoundingClientRect();
+
+    const dropdown = document.createElement("div");
+    dropdown.className = "col-filter-dropdown";
+    dropdown.style.position = "fixed";
+    dropdown.style.top    = (rect.bottom) + "px";
+    dropdown.style.left   = (rect.left) + "px";
+    dropdown.style.minWidth = rect.width + "px";
+
+    const currentVal = field === "type" ? filterType : filterSource;
+
+    options.forEach(opt => {
+        const el = document.createElement("div");
+        el.className  = "col-filter-option" + (opt === currentVal ? " selected" : "");
+        el.textContent = opt;
+        el.addEventListener("click", (e) => {
+            e.stopPropagation();
+            if (field === "type")   filterType   = opt;
+            if (field === "source") filterSource = opt;
+            dropdown.remove();
+            renderTransactionsTable();
+        });
+        dropdown.appendChild(el);
+    });
+
+    document.body.appendChild(dropdown);
+
+    // Close on outside click
+    setTimeout(() => {
+        document.addEventListener("click", () => dropdown.remove(), { once: true });
+    }, 0);
 }
 
 // ── TRANSACTION FORM (Add / Edit / Delete) ────────────────────────────────────
