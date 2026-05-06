@@ -200,7 +200,7 @@
                 <div class="chart-card">
                     <div class="transactions-toolbar">
                         <div class="chart-title">All Transactions</div>
-                        <button class="btn-add" id="btn-add-transaction">+ Add</button>
+                        <button class="btn-add" id="btn-add-transaction"><span style="font-size:18px;">+</span> Add</button>
                     </div>
                     <div id="all-transactions" class="table-wrap"></div>
                 </div>
@@ -209,10 +209,26 @@
 
         <!-- ── SETTINGS VIEW ── -->
         <section id="view-settings" class="view">
-            <div class="empty-state">
-                <div class="empty-icon">⚙️</div>
-                <div class="empty-title">Settings</div>
-                <div class="empty-sub">Coming soon</div>
+            <div class="settings-container">
+
+                <!-- Categories Section -->
+                <div class="settings-section">
+                    <div class="settings-section-header">
+                        <div class="settings-section-title">Categories</div>
+                        <button class="btn-add" id="btn-add-category"><span style="font-size:18px;">+</span> Add</button>
+                    </div>
+                    <div class="settings-table-wrap" id="categories-table"></div>
+                </div>
+
+                <!-- Sources Section -->
+                <div class="settings-section">
+                    <div class="settings-section-header">
+                        <div class="settings-section-title">Sources</div>
+                        <button class="btn-add" id="btn-add-source"><span style="font-size:18px;">+</span> Add</button>
+                    </div>
+                    <div class="settings-table-wrap" id="sources-table"></div>
+                </div>
+
             </div>
         </section>
 
@@ -257,12 +273,24 @@
                 <div class="form-row">
                     <div class="form-group">
                         <label>Type (Category)</label>
-                        <input type="text" id="tx-type" placeholder="e.g. Food, Travel" class="form-input" />
+                        <div class="custom-select" id="tx-type-dropdown">
+                            <div class="custom-select-trigger">
+                                <span id="tx-type-label">Select...</span>
+                                <span class="custom-select-arrow">▾</span>
+                            </div>
+                            <div class="custom-select-options"></div>
+                        </div>
                         <span class="form-error" id="err-type"></span>
                     </div>
                     <div class="form-group">
                         <label>Source</label>
-                        <input type="text" id="tx-source" placeholder="e.g. Bank Statement" class="form-input" />
+                        <div class="custom-select" id="tx-source-dropdown">
+                            <div class="custom-select-trigger">
+                                <span id="tx-source-label">Select...</span>
+                                <span class="custom-select-arrow">▾</span>
+                            </div>
+                            <div class="custom-select-options"></div>
+                        </div>
                         <span class="form-error" id="err-source"></span>
                     </div>
                 </div>

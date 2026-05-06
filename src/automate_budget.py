@@ -94,9 +94,9 @@ def fetch_transactions_from_bank_statement(statement_file):
     transactions_df = pd.DataFrame(transactions)
     return transactions_df
 
-def classify_transaction(remarks):
+def classify_transaction(categories, remarks):
     remarks_lower = remarks.lower()
-    for category, keywords in CATEGORIES.items():
+    for category, keywords in categories.items():
         for keyword in keywords:
             if keyword in remarks_lower:
                 return category, keyword.strip()

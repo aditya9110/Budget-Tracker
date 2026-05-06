@@ -33,6 +33,22 @@ def init_db():
         )
     """)
 
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS categories (
+            id          INTEGER PRIMARY KEY AUTOINCREMENT,
+            name        TEXT    UNIQUE NOT NULL,
+            keywords    TEXT,
+            grp         TEXT
+        )
+    """)
+
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS sources (
+            id          INTEGER PRIMARY KEY AUTOINCREMENT,
+            name        TEXT    UNIQUE NOT NULL
+        )
+    """)
+
     conn.commit()
     conn.close()
 
@@ -203,3 +219,83 @@ def get_imported_months():
     rows = [dict(row) for row in cursor.fetchall()]
     conn.close()
     return rows
+
+
+# ─────────────────────────────────────────────
+# CATEGORIES
+# ─────────────────────────────────────────────
+
+def get_categories_settings():
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM categories ORDER BY name ASC")
+    rows = [dict(row) for row in cursor.fetchall()]
+    conn.close()
+    return rows
+
+
+def add_category(name, keywords, grp):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "INSERT INTO categories (name, keywords, grp) VALUES (?, ?, ?)",
+        (name, keywords, grp)
+    )
+    conn.commit()
+    conn.close()
+
+
+def update_category(cat_id, name, keywords, grp):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "UPDATE categories SET name=?, keywords=?, grp=? WHERE id=?",
+        (name, keywords, grp, cat_id)
+    )
+    conn.commit()
+    conn.close()
+
+
+def delete_category(cat_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM categories WHERE id=?", (cat_id,))
+    conn.commit()
+    conn.close()
+
+
+# ─────────────────────────────────────────────
+# SOURCES
+# ─────────────────────────────────────────────
+
+def get_sources():
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM sources ORDER BY name ASC")
+    rows = [dict(row) for row in cursor.fetchall()]
+    conn.close()
+    return rows
+
+
+def add_source(name):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("INSERT INTO sources (name) VALUES (?)", (name,))
+    conn.commit()
+    conn.close()
+
+
+def update_source(source_id, name):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("UPDATE sources SET name=? WHERE id=?", (name, source_id))
+    conn.commit()
+    conn.close()
+
+
+def delete_source(source_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM sources WHERE id=?", (source_id,))
+    conn.commit()
+    conn.close()

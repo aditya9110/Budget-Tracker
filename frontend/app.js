@@ -92,6 +92,7 @@ function init() {
     setupImport();
     setupModals();
     setupTransactionForm();
+    setupSettings();
 }
 
 // ── CUSTOM DROPDOWN LOGIC ────────────────────────────────────────────────────
@@ -203,6 +204,8 @@ function switchView(view) {
     } else {
         periodControls.classList.add("hidden");
     }
+
+    if (view === "settings") loadSettings();
 }
 
 // ── PERIOD CONTROLS ───────────────────────────────────────────────────────────
@@ -621,12 +624,12 @@ function setupTransactionForm() {
     txModalSave.addEventListener("click", saveTx);
 }
 
-function openTxModal(row) {
+async function openTxModal(row) {
     // Clear previous errors
     ["err-date","err-spend","err-description","err-type","err-source"].forEach(id => {
         document.getElementById(id).textContent = "";
     });
-    ["tx-date","tx-spend","tx-description","tx-type","tx-source"].forEach(id => {
+    ["tx-date","tx-spend","tx-description"].forEach(id => {
         document.getElementById(id).classList.remove("invalid");
     });
 
@@ -635,9 +638,16 @@ function openTxModal(row) {
     document.getElementById("tx-date").value         = row ? row.date : "";
     document.getElementById("tx-spend").value        = row ? row.spend : "";
     document.getElementById("tx-description").value  = row ? row.description : "";
-    document.getElementById("tx-type").value         = row ? row.type : "";
-    document.getElementById("tx-source").value       = row ? row.source : "";
     document.getElementById("tx-remarks").value      = row ? row.remarks : "";
+
+    // Load categories and sources for dropdowns
+    const result = await callPython("get_categories_and_sources");
+    const categories = result.ok ? result.data.categories : [];
+    const sources    = result.ok ? result.data.sources : [];
+
+    buildTxDropdown("tx-type-dropdown", "tx-type-label", categories, row ? row.type : null);
+    buildTxDropdown("tx-source-dropdown", "tx-source-label", sources, row ? row.source : null);
+
     txModalOverlay.classList.remove("hidden");
 }
 
@@ -646,8 +656,6 @@ function validateTxForm() {
         { id: "tx-date",        errId: "err-date",        rule: v => /^\d{2}-\d{2}-\d{4}$/.test(v),  msg: "Enter a valid date (DD-MM-YYYY)" },
         { id: "tx-spend",       errId: "err-spend",       rule: v => !isNaN(v) && Number(v) > 0,      msg: "Enter a positive amount" },
         { id: "tx-description", errId: "err-description", rule: v => v.trim().length >= 3,             msg: "Min 3 characters required" },
-        { id: "tx-type",        errId: "err-type",        rule: v => v.trim().length > 0,              msg: "Category is required" },
-        { id: "tx-source",      errId: "err-source",      rule: v => v.trim().length > 0,              msg: "Source is required" },
     ];
 
     let valid = true;
@@ -667,6 +675,26 @@ function validateTxForm() {
         }
     });
 
+    // Validate category dropdown
+    const typeErr = document.getElementById("err-type");
+    const typeVal = document.getElementById("tx-type-dropdown").dataset.value;
+    if (!typeVal) {
+        typeErr.textContent = "Category is required";
+        valid = false;
+    } else {
+        typeErr.textContent = "";
+    }
+    
+    // Validate source dropdown
+    const sourceErr = document.getElementById("err-source");
+    const sourceVal = document.getElementById("tx-source-dropdown").dataset.value;
+    if (!sourceVal) {
+        sourceErr.textContent = "Source is required";
+        valid = false;
+    } else {
+        sourceErr.textContent = "";
+    }
+
     return valid;
 }
 
@@ -678,8 +706,8 @@ async function saveTx() {
         date:        document.getElementById("tx-date").value,
         spend:       parseFloat(document.getElementById("tx-spend").value) || 0,
         description: document.getElementById("tx-description").value,
-        type:        document.getElementById("tx-type").value,
-        source:      document.getElementById("tx-source").value,
+        type:        document.getElementById("tx-type-dropdown").dataset.value,
+        source:      document.getElementById("tx-source-dropdown").dataset.value,
         remarks:     document.getElementById("tx-remarks").value,
         year:        currentYear,
         month:       currentMonth,
@@ -759,6 +787,342 @@ function buildTable(rows, cols, withActions) {
     }).join("");
 
     return `<table><thead><tr>${headers}</tr></thead><tbody>${body}</tbody></table>`;
+}
+
+function buildTxDropdown(dropdownId, labelId, items, selectedValue) {
+    const dropdown = document.getElementById(dropdownId);
+    const label    = document.getElementById(labelId);
+    const optsList = dropdown.querySelector(".custom-select-options");
+
+    // Set label
+    label.textContent = selectedValue || "Select...";
+    dropdown.dataset.value = selectedValue || "";
+
+    // Clear and rebuild options
+    optsList.innerHTML = "";
+    items.forEach(item => {
+        const opt = document.createElement("div");
+        opt.className = "custom-option" + (item === selectedValue ? " selected" : "");
+        opt.textContent  = item;
+        opt.dataset.value = item;
+        opt.addEventListener("click", (e) => {
+            e.stopPropagation();
+            optsList.querySelectorAll(".custom-option").forEach(o => o.classList.remove("selected"));
+            opt.classList.add("selected");
+            label.textContent      = item;
+            dropdown.dataset.value = item;
+            dropdown.classList.remove("open");
+            // Clear error if any
+            const err = document.getElementById("err-type");
+            if (err) err.textContent = "";
+        });
+        optsList.appendChild(opt);
+    });
+
+    // Toggle open/close
+    const trigger = dropdown.querySelector(".custom-select-trigger");
+    trigger.onclick = (e) => {
+        e.stopPropagation();
+        const isOpen = dropdown.classList.contains("open");
+        closeAllDropdowns();
+        if (!isOpen) dropdown.classList.add("open");
+    };
+}
+
+// ── SETTINGS ─────────────────────────────────────────────────────────────────
+function setupSettings() {
+    document.getElementById("btn-add-category").addEventListener("click", addCategoryRow);
+    document.getElementById("btn-add-source").addEventListener("click", addSourceRow);
+}
+
+const GROUPS = ["None", "Family", "Parents"];
+
+async function loadSettings() {
+    await Promise.all([
+        loadCategoriesSettings(),
+        loadSourcesSettings()
+    ]);
+}
+
+// ── CATEGORIES SETTINGS ───────────────────────────────────────────────────────
+
+async function loadCategoriesSettings() {
+    const result = await callPython("get_categories_settings");
+    if (!result.ok) { showToast(result.error, "error"); return; }
+    renderCategoriesTable(result.data);
+}
+
+function renderCategoriesTable(rows) {
+    const el = document.getElementById("categories-table");
+
+    if (!rows.length) {
+        el.innerHTML = `<div style="padding:16px;color:var(--text-muted);font-size:13px;">No categories yet. Add one above.</div>`;
+        return;
+    }
+
+    const headers = `<thead><tr>
+        <th>Name</th>
+        <th>Keywords <span style="font-weight:400;text-transform:none;letter-spacing:0">(comma separated)</span></th>
+        <th>Group</th>
+        <th style="width:80px"></th>
+    </tr></thead>`;
+
+    const bodyRows = rows.map(row => buildCategoryRow(row, false)).join("");
+    el.innerHTML = `<table>${headers}<tbody>${bodyRows}</tbody></table>`;
+}
+
+function buildCategoryRow(row, isEditing) {
+    const groupOptions = GROUPS.map(g =>
+        `<option value="${g}" ${row.grp === g ? "selected" : ""}>${g}</option>`
+    ).join("");
+
+    if (isEditing) {
+        return `<tr data-id="${row.id || ''}" data-mode="edit">
+            <td><input class="settings-input" data-field="name" value="${row.name || ''}" /></td>
+            <td><input class="settings-input" data-field="keywords" value="${row.keywords || ''}" /></td>
+            <td>
+                <div class="custom-select settings-group-select" data-value="${row.grp || 'None'}">
+                    <div class="custom-select-trigger">
+                        <span class="group-label">${row.grp || 'None'}</span>
+                        <span class="custom-select-arrow">▾</span>
+                    </div>
+                    <div class="custom-select-options">
+                        ${GROUPS.map(g => `<div class="custom-option ${row.grp === g ? 'selected' : ''}" data-value="${g}">${g}</div>`).join("")}
+                    </div>
+                </div>
+            </td>
+            <td class="actions">
+                <button class="btn-save-row" onclick="saveCategoryRow(this)">✓</button>
+                <button class="btn-delete"   onclick="deleteCategoryRow(this)">✕</button>
+            </td>
+        </tr>`;
+    } else {
+        return `<tr data-id="${row.id}" data-mode="view">
+            <td style="color:var(--text-primary);font-family:var(--font-mono);font-size:12px;padding:10px 12px;">${row.name}</td>
+            <td style="color:var(--text-secondary);font-family:var(--font-mono);font-size:12px;padding:10px 12px;">${row.keywords || '—'}</td>
+            <td style="color:var(--purple-light);font-family:var(--font-mono);font-size:12px;padding:10px 12px;">${row.grp || 'None'}</td>
+            <td class="actions">
+                <button class="btn-edit"   onclick="editCategoryRow(this)">✎</button>
+                <button class="btn-delete" onclick="deleteCategoryRow(this)">✕</button>
+            </td>
+        </tr>`;
+    }
+}
+
+function editCategoryRow(btn) {
+    const tr = btn.closest("tr");
+    const id = tr.dataset.id;
+    const cells = tr.querySelectorAll("td");
+    const row = {
+        id,
+        name:     cells[0].textContent.trim(),
+        keywords: cells[1].textContent.trim() === '—' ? '' : cells[1].textContent.trim(),
+        grp:      cells[2].textContent.trim()
+    };
+    tr.outerHTML = buildCategoryRow(row, true);
+    setupGroupDropdowns();
+}
+
+async function saveCategoryRow(btn) {
+    const tr       = btn.closest("tr");
+    const id       = tr.dataset.id;
+    const name     = tr.querySelector("[data-field='name']").value.trim();
+    const keywords = tr.querySelector("[data-field='keywords']").value.trim();
+    const grp      = tr.querySelector(".settings-group-select").dataset.value;
+
+    if (!name) { showToast("Category name is required", "error"); return; }
+
+    let result;
+    if (id) {
+        result = await callPython("update_category", { id, name, keywords, grp });
+    } else {
+        result = await callPython("add_category", { name, keywords, grp });
+    }
+
+    if (result.ok) {
+        showToast("Category saved", "success");
+        loadCategoriesSettings();
+    } else {
+        showToast(result.error, "error");
+    }
+}
+
+async function deleteCategoryRow(btn) {
+    const tr = btn.closest("tr");
+    const id = tr.dataset.id;
+
+    // New unsaved row — just remove from DOM
+    if (!id) { tr.remove(); return; }
+
+    showConfirmModal("Delete Category", "Delete this category?", async () => {
+        const result = await callPython("delete_category", id);
+        if (result.ok) { showToast("Category deleted", "success"); loadCategoriesSettings(); }
+        else showToast(result.error, "error");
+    });
+}
+
+function addCategoryRow() {
+    const el = document.getElementById("categories-table");
+
+    // If table doesn't exist, create it with empty tbody
+    if (!el.querySelector("tbody")) {
+        el.innerHTML = `<table>
+            <thead><tr>
+                <th>Name</th>
+                <th>Keywords <span style="font-weight:400;text-transform:none;letter-spacing:0">(comma separated)</span></th>
+                <th>Group</th>
+                <th style="width:80px"></th>
+            </tr></thead>
+            <tbody></tbody>
+        </table>`;
+    }
+
+    const tbody  = el.querySelector("tbody");
+    const newRow = document.createElement("tr");
+    newRow.dataset.id   = "";
+    newRow.dataset.mode = "edit";
+    newRow.innerHTML = buildCategoryRow({ id: "", name: "", keywords: "", grp: "None" }, true)
+        .replace(/^<tr[^>]*>/, "").replace(/<\/tr>$/, "");
+    tbody.appendChild(newRow);
+    setupGroupDropdowns();
+    newRow.querySelector("[data-field='name']").focus();
+}
+
+// ── SOURCES SETTINGS ─────────────────────────────────────────────────────────
+
+async function loadSourcesSettings() {
+    const result = await callPython("get_sources");
+    if (!result.ok) { showToast(result.error, "error"); return; }
+    renderSourcesTable(result.data);
+}
+
+function renderSourcesTable(rows) {
+    const el = document.getElementById("sources-table");
+
+    if (!rows.length) {
+        el.innerHTML = `<div style="padding:16px;color:var(--text-muted);font-size:13px;">No sources yet. Add one above.</div>`;
+        return;
+    }
+
+    const headers = `<thead><tr><th>Name</th><th style="width:80px"></th></tr></thead>`;
+    const bodyRows = rows.map(row => buildSourceRow(row, false)).join("");
+    el.innerHTML = `<table>${headers}<tbody>${bodyRows}</tbody></table>`;
+}
+
+function buildSourceRow(row, isEditing) {
+    if (isEditing) {
+        return `<tr data-id="${row.id || ''}" data-mode="edit">
+            <td><input class="settings-input" data-field="name" value="${row.name || ''}" /></td>
+            <td class="actions">
+                <button class="btn-save-row" onclick="saveSourceRow(this)">✓</button>
+                <button class="btn-delete"   onclick="deleteSourceRow(this)">✕</button>
+            </td>
+        </tr>`;
+    } else {
+        return `<tr data-id="${row.id}" data-mode="view">
+            <td style="color:var(--text-primary);font-family:var(--font-mono);font-size:12px;padding:10px 12px;">${row.name}</td>
+            <td class="actions">
+                <button class="btn-edit"   onclick="editSourceRow(this)">✎</button>
+                <button class="btn-delete" onclick="deleteSourceRow(this)">✕</button>
+            </td>
+        </tr>`;
+    }
+}
+
+function editSourceRow(btn) {
+    const tr   = btn.closest("tr");
+    const id   = tr.dataset.id;
+    const name = tr.querySelector("td").textContent.trim();
+    tr.outerHTML = buildSourceRow({ id, name }, true);
+}
+
+async function saveSourceRow(btn) {
+    const tr   = btn.closest("tr");
+    const id   = tr.dataset.id;
+    const name = tr.querySelector("[data-field='name']").value.trim();
+
+    if (!name) { showToast("Source name is required", "error"); return; }
+
+    let result;
+    if (id) {
+        result = await callPython("update_source", { id, name });
+    } else {
+        result = await callPython("add_source", { name });
+    }
+
+    if (result.ok) {
+        showToast("Source saved", "success");
+        loadSourcesSettings();
+    } else {
+        showToast(result.error, "error");
+    }
+}
+
+async function deleteSourceRow(btn) {
+    const tr = btn.closest("tr");
+    const id = tr.dataset.id;
+
+    if (!id) { tr.remove(); return; }
+
+    showConfirmModal("Delete Source", "Delete this source?", async () => {
+        const result = await callPython("delete_source", id);
+        if (result.ok) { showToast("Source deleted", "success"); loadSourcesSettings(); }
+        else showToast(result.error, "error");
+    });
+}
+
+function addSourceRow() {
+    const el = document.getElementById("sources-table");
+
+    // If table doesn't exist, create it with empty tbody
+    if (!el.querySelector("tbody")) {
+        el.innerHTML = `<table>
+            <thead><tr>
+                <th>Name</th>
+                <th style="width:80px"></th>
+            </tr></thead>
+            <tbody></tbody>
+        </table>`;
+    }
+
+    const tbody  = el.querySelector("tbody");
+    const newRow = document.createElement("tr");
+    newRow.dataset.id   = "";
+    newRow.dataset.mode = "edit";
+    newRow.innerHTML = buildSourceRow({ id: "", name: "" }, true)
+        .replace(/^<tr[^>]*>/, "").replace(/<\/tr>$/, "");
+    tbody.appendChild(newRow);
+    newRow.querySelector("[data-field='name']").focus();
+}
+
+// ── GROUP DROPDOWN SETUP ──────────────────────────────────────────────────────
+
+function setupGroupDropdowns() {
+    document.querySelectorAll(".settings-group-select").forEach(dropdown => {
+        const trigger = dropdown.querySelector(".custom-select-trigger");
+        const options = dropdown.querySelector(".custom-select-options");
+        const label   = dropdown.querySelector(".group-label");
+
+        trigger.addEventListener("click", (e) => {
+            e.stopPropagation();
+            const isOpen = dropdown.classList.contains("open");
+            document.querySelectorAll(".settings-group-select.open")
+                .forEach(d => d.classList.remove("open"));
+            if (!isOpen) dropdown.classList.add("open");
+        });
+
+        options.querySelectorAll(".custom-option").forEach(opt => {
+            opt.addEventListener("click", (e) => {
+                e.stopPropagation();
+                options.querySelectorAll(".custom-option")
+                    .forEach(o => o.classList.remove("selected"));
+                opt.classList.add("selected");
+                label.textContent    = opt.dataset.value;
+                dropdown.dataset.value = opt.dataset.value;
+                dropdown.classList.remove("open");
+            });
+        });
+    });
 }
 
 // ── HELPERS ──────────────────────────────────────────────────────────────────

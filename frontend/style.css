@@ -721,3 +721,101 @@ tbody td.actions  { width: 80px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--text-muted); border-radius: 10px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--purple); }
+
+/* ── SETTINGS ─────────────────────────────────── */
+.settings-container {
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+}
+
+.settings-section {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.settings-section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.settings-section-title {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+}
+
+.settings-table-wrap { overflow-x: auto; }
+
+/* Inline editing */
+.settings-input {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text-primary);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    padding: 5px 8px;
+    outline: none;
+    transition: border-color 0.18s;
+    width: 100%;
+}
+
+.settings-input:focus { border-color: var(--purple); }
+
+.settings-select {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text-primary);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    padding: 5px 8px;
+    outline: none;
+    cursor: pointer;
+    transition: border-color 0.18s;
+}
+
+.settings-select:focus { border-color: var(--purple); }
+
+.btn-save-row {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+    padding: 3px 6px;
+    border-radius: 4px;
+    color: var(--purple-light);
+    transition: all 0.15s;
+}
+
+.btn-save-row:hover { background: var(--purple-dim); }
+
+.settings-group-select {
+    width: 100%;
+}
+
+.settings-group-select .custom-select-options {
+    z-index: 300;
+    width: 100%;
+}
+
+#categories-table table {
+    overflow: visible;
+}
+
+#categories-table td {
+    overflow: visible;
+}
+
+.settings-table-wrap {
+    overflow: visible;
+}

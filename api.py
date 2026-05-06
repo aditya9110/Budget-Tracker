@@ -106,6 +106,8 @@ class Api:
         Classifies and inserts transactions into SQLite.
         Returns count of expense transactions imported.
         """
+        categories = db.get_categories_settings()
+        parsed_categories = {c["name"]: c["keywords"].split(",") for c in categories}
         rows = []
         for _, row in transactions_df.iterrows():
             description = str(row["Transaction Remarks"])
@@ -122,7 +124,7 @@ class Api:
                     "is_salary":   1
                 })
             else:
-                category, matched_keyword = classify_transaction(description)
+                category, matched_keyword = classify_transaction(parsed_categories, description)
                 rows.append({
                     "date":        row["Date"],
                     "description": description[:90].strip(),
@@ -293,3 +295,103 @@ class Api:
         except Exception as e:
             traceback.print_exc()
             return {"ok": False, "error": f"Unexpected error: {str(e)}"}
+        
+    
+    # ─────────────────────────────────────────────
+    # SETTINGS — CATEGORIES
+    # ─────────────────────────────────────────────
+
+    def get_categories_settings(self):
+        try:
+            rows = db.get_categories_settings()
+            return {"ok": True, "data": rows}
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
+
+    def add_category(self, payload):
+        try:
+            db.add_category(
+                name     = payload["name"],
+                keywords = payload.get("keywords", ""),
+                grp      = payload.get("grp", "None")
+            )
+            return {"ok": True, "data": None}
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
+
+    def update_category(self, payload):
+        try:
+            db.update_category(
+                cat_id   = int(payload["id"]),
+                name     = payload["name"],
+                keywords = payload.get("keywords", ""),
+                grp      = payload.get("grp", "None")
+            )
+            return {"ok": True, "data": None}
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
+
+    def delete_category(self, cat_id):
+        try:
+            db.delete_category(int(cat_id))
+            return {"ok": True, "data": None}
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
+
+    # ─────────────────────────────────────────────
+    # SETTINGS — SOURCES
+    # ─────────────────────────────────────────────
+
+    def get_sources(self):
+        try:
+            rows = db.get_sources()
+            return {"ok": True, "data": rows}
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
+
+    def add_source(self, payload):
+        try:
+            db.add_source(name=payload["name"])
+            return {"ok": True, "data": None}
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
+
+    def update_source(self, payload):
+        try:
+            db.update_source(
+                source_id = int(payload["id"]),
+                name      = payload["name"]
+            )
+            return {"ok": True, "data": None}
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
+
+    def delete_source(self, source_id):
+        try:
+            db.delete_source(int(source_id))
+            return {"ok": True, "data": None}
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
+
+    def get_categories_and_sources(self):
+        """Returns categories and sources for dropdown menus."""
+        try:
+            categories = db.get_categories_settings()
+            sources    = db.get_sources()
+            return {
+                "ok": True,
+                "data": {
+                    "categories": [c["name"] for c in categories],
+                    "sources":    [s["name"] for s in sources]
+                }
+            }
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
