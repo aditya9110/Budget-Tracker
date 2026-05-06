@@ -49,6 +49,11 @@ def init_db():
         )
     """)
 
+    # might remove later when multiple bank support is added
+    cursor.execute("""
+        INSERT OR IGNORE INTO sources (name) VALUES ('Bank Statement')
+    """)
+
     conn.commit()
     conn.close()
 
