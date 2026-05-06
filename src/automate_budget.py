@@ -10,19 +10,6 @@ WITHDRAWAL_COL = 6
 SALARY_COL = 7
 
 
-def get_statement_file(statement_folder, month):    
-    if not os.path.exists(statement_folder):
-        raise FileNotFoundError(f"Statement folder '{statement_folder}' not found")
-    
-    month_lower = month.lower()
-    for filename in os.listdir(statement_folder):
-        if month_lower in filename.lower():
-            file_path = os.path.join(statement_folder, filename)
-            if os.path.isfile(file_path):
-                return file_path
-    
-    raise FileNotFoundError(f"No statement file found for month '{month}' in '{statement_folder}'")
-
 def fetch_transactions_from_bank_statement(statement_file):
     df = pd.read_excel(statement_file, header=None)
 
