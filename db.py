@@ -2,10 +2,14 @@ import sqlite3
 import os
 from datetime import datetime
 
+# for production, store DB in user's AppData folder
 # Store database in C:\Users\<username>\Budgeteer\
 APP_DATA_DIR = os.path.join(os.path.expanduser("~"), "Budgeteer")
 os.makedirs(APP_DATA_DIR, exist_ok=True)
 DB_PATH = os.path.join(APP_DATA_DIR, "budgeteer.db")
+
+# for development, store DB in project folder for easy access
+DB_PATH = os.path.join(os.path.dirname(__file__), "data", "budgeteer.db")
 
 
 def get_connection():
