@@ -44,6 +44,7 @@ def fetch_transactions_from_bank_statement(statement_file):
                     "Transaction Remarks": current_remarks.strip(),
                     "Withdrawal Amount (INR)": current_withdrawal
                 })
+                current_withdrawal = None  # reset for next transaction
 
             if withdrawal != "0.00":
                 # start new transaction
