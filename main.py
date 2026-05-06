@@ -2,6 +2,7 @@ import sys
 import os
 import json
 
+from PyQt6.QtGui import QIcon
 from PyQt6.QtWidgets import QApplication, QMainWindow
 from PyQt6.QtWebEngineWidgets import QWebEngineView
 from PyQt6.QtWebChannel import QWebChannel
@@ -92,6 +93,8 @@ if __name__ == "__main__":
 
     # Create app
     app = QApplication(sys.argv)
+    icon_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "frontend/Assets", "logo.png")
+    app.setWindowIcon(QIcon(icon_path))
     app.setApplicationName("Budgeteer")
 
     # Create bridge and window
