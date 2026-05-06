@@ -3,3 +3,6 @@ __pycache__
 *.xls
 .venv
 *.db
+build
+dist
+*.spec
