@@ -3,26 +3,6 @@ import pandas as pd
 import os
 
 # --- CONFIG ---
-CATEGORIES = {
-    "Cash Withdrawal": ["cash wdl"],
-    "EMI": ["emi", "hdb financial", "loan", "personal loan"],
-    "Rent": ["rent"],
-    "Food": ["food", "hazel", "brambles", "theobroma", "mimi"],
-    "Entertainment": ["entertainment", "district", "bookmyshow", "bms"],
-    "Groceries": ["groceries", "grocery", "dmart", "avenue"],
-    "Bills": ["bills"],
-    "Bills (P)": ["radha naga", "bennett"],
-    "Personal": ["personal"],
-    "Shopping": [],
-    "Parents": ["home", "parents", "parent"],
-    "Investment": ["investment", " fd ", "invest", "groww"],
-    "Insurance": ["insurance", "tataaia", "aia", "lic"],
-    "Fuel": ["fuel", "petrol"],
-    "Travel": ["travel", "railway", "rail", "irctc", "auto", "cab"],
-    "Medicines": ["medicine", "wellness"],
-    "Medicines (P)": ["medicinep", "revival", "wellness", "hospitalp"]
-}
-
 # adjust based on statement file
 DATE_COL = 3
 REMARKS_COL = 5
