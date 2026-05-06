@@ -887,6 +887,12 @@ function setupModals() {
         modalOverlay.classList.add("hidden");
         if (pendingConfirm) { pendingConfirm(); pendingConfirm = null; }
     });
+    
+    document.addEventListener("keydown", (e) => {
+        if (e.key !== "Escape") return;
+        modalOverlay.classList.add("hidden");
+        txModalOverlay.classList.add("hidden");
+    });
 }
 
 function showConfirmModal(title, body, onConfirm) {
