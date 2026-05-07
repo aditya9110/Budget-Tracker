@@ -84,9 +84,10 @@ Select a month and year from the top bar and click **Load** to view:
 
 - **KPI Row** — Total Spent, Top Category, Avg Daily Spend, Transaction Count, Budget Status
 - **Category Breakdown** — horizontal bar chart sorted by spend
+- **Spending by Source** — pie chart of all sources
 - **Daily Spending Trend** — bar chart with 7-day rolling average
 - **Cumulative Spend** — area chart showing total spend over the month
-- **Parents vs Family** — donut chart splitting spend groups
+- **Parents vs Family Spending** — donut chart splitting spend groups
 - **Hierarchical View** — treemap of categories and transactions
 - **Top Transactions** — table of 8 highest spend transactions
 
@@ -115,26 +116,32 @@ SALARY_COL     = 7   # Salary/credit amount column index
 ```
 
 ### Add or Edit Categories
-Edit the `CATEGORIES` dictionary in `src/automate_budget.py`:
 
-```python
-CATEGORIES = {
-    "Food": ["food", "swiggy", "zomato"],
-    "Travel": ["uber", "ola", "irctc"],
-    ...
-}
-```
+Categories are managed directly from the app — no code changes needed.
+
+1. Open **Budgeteer** and go to **Settings**
+2. Under the **Categories** section, click **➕ Add** to create a new category
+3. Fill in:
+   - **Name** — the category label (e.g. `Food`, `Travel`)
+   - **Keywords** — comma-separated keywords that auto-match transaction descriptions (e.g. `swiggy, zomato, food`)
+   - **Group** — assign to `Family`, `Parents`, or `None` for the spending split chart
+4. Click **✓** to save
+5. To edit an existing category, click **✎** — make changes and click **✓** to save
+6. To delete, click **✕** and confirm
+
+> **Tip:** Add keywords that appear in your bank statement descriptions. For example, if your bank shows `UPI-SWIGGY-ORDER`, adding `swiggy` as a keyword is enough — matching is case-insensitive and partial.
+
 
 ---
 
 ## 💾 Backup
 
-All data is stored in a single file:
+All data is stored in a single file in your user profile directory:
 ```
-Budgeteer/data/budgeteer.db
+C:\Users\<username>\Budgeteer\budgeteer.db
 ```
 
-Copy this file to Google Drive or any location to back up all your transactions. To restore, copy it back into the `data/` folder.
+Copy this file to Google Drive or any location to back up all your transactions. To restore, copy it back into the `C:\Users\<username>\Budgeteer\` folder.
 
 ---
 
@@ -143,11 +150,10 @@ Copy this file to Google Drive or any location to back up all your transactions.
 To create a standalone Windows executable:
 
 ```
-python -m pip install pyinstaller
-pyinstaller --onefile --windowed --add-data "frontend;frontend" main.py
+pyinstaller --onefile --windowed --icon=frontend/Assets/logo.ico --add-data "frontend;frontend" --name "Budgeteer" main.py
 ```
 
-The `.exe` will be in the `dist/` folder. Copy `dist/main.exe` + `data/` folder to any Windows machine — no Python needed.
+The `.exe` will be in the `dist/` folder. Copy `dist/Budgeteer.exe` folder to any Windows machine — no Python needed.
 
 ---
 
@@ -156,7 +162,7 @@ The `.exe` will be in the `dist/` folder. Copy `dist/main.exe` + `data/` folder 
 | Issue | Solution |
 |-------|----------|
 | No transactions imported | Verify column indices match your bank format in `src/automate_budget.py` |
-| Transactions not categorized | Add keywords to `CATEGORIES` for your bank's terminology |
+| Transactions not categorized | Add keywords to `Categories` section in the app for your bank's terminology |
 | Salary not detected | Ensure salary transaction has "salary" in description |
 | Budget Status not showing | Previous month's data must be imported first |
 | Charts not rendering | Ensure `frontend/plotly.min.js` exists |
