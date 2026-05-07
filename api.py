@@ -148,7 +148,7 @@ class Api:
         }
 
 
-    def _get_budget_status(self, year, month, current_transactions):
+    def _get_budget_status(self, year, month):
         """
         Calculates budget status based on previous month's salary.
         """
@@ -158,25 +158,26 @@ class Api:
             prev_month   = prev_date.strftime("%B")
             prev_year    = prev_date.year
 
-            prev_salary = db.get_salary_row(prev_year, prev_month)
-            curr_salary = db.get_salary_row(year, month)
+            prev_salary = db.get_transactions_with_salary(prev_year, prev_month)
+            curr_salary = db.get_transactions_with_salary(year, month)
 
-            if not prev_salary:
+            post_salary_spend = 0
+            salary = None
+            for prev_tx in prev_salary:
+                if prev_tx["is_salary"]:
+                    salary = float(prev_tx["remarks"])
+                    continue
+                if salary:
+                    post_salary_spend += prev_tx["spend"]
+
+            if not salary:
                 return None
 
-            salary = float(prev_salary["remarks"])
-
-            prev_transactions = db.get_transactions(prev_year, prev_month)
-            prev_salary_id    = prev_salary["id"]
-            post_salary_spend = sum(
-                t["spend"] for t in prev_transactions if t["id"] > prev_salary_id
-            )
-
-            curr_salary_id = curr_salary["id"] if curr_salary else None
-            current_spend  = sum(
-                t["spend"] for t in current_transactions
-                if curr_salary_id is None or t["id"] < curr_salary_id
-            )
+            current_spend = 0
+            for curr_tx in curr_salary:
+                if curr_tx["is_salary"]:
+                    break
+                current_spend += curr_tx["spend"]
 
             total_expense = post_salary_spend + current_spend
             diff          = salary - total_expense
@@ -271,7 +272,7 @@ class Api:
             categories   = db.get_categories(year, month)
             daily_spend  = db.get_daily_spend(year, month)
 
-            budget_status    = self._get_budget_status(year, month, transactions)
+            budget_status    = self._get_budget_status(year, month)
             top_transactions = sorted(transactions, key=lambda x: x["spend"], reverse=True)[:8]
 
             source_map = {}

@@ -121,18 +121,18 @@ def get_transactions(year, month):
     return rows
 
 
-def get_salary_row(year, month):
-    """Returns the salary row for a given month, if it exists."""
+def get_transactions_with_salary(year, month):
+    """Returns all the transactions along with salary for a given month, if it exists."""
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("""
         SELECT * FROM transactions
-        WHERE year = ? AND month = ? AND is_salary = 1
-        LIMIT 1
+        WHERE year = ? AND month = ?
+        ORDER BY date ASC
     """, (year, month))
-    row = cursor.fetchone()
+    rows = [dict(row) for row in cursor.fetchall()]
     conn.close()
-    return dict(row) if row else None
+    return rows
 
 
 def get_categories(year, month):
