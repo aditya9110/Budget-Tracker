@@ -9,7 +9,7 @@ os.makedirs(APP_DATA_DIR, exist_ok=True)
 DB_PATH = os.path.join(APP_DATA_DIR, "budgeteer.db")
 
 # for development, store DB in project folder for easy access
-DB_PATH = os.path.join(os.path.dirname(__file__), "data", "budgeteer.db")
+# DB_PATH = os.path.join(os.path.dirname(__file__), "data", "budgeteer.db")
 
 
 def get_connection():
